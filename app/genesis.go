@@ -21,7 +21,6 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 	coretypes "github.com/cosmos/ibc-go/v6/modules/core/types"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -125,12 +124,6 @@ func NewDefAppGenesisByDenom(denom string, cdc codec.JSONCodec) GenesisState {
 			state := coretypes.DefaultGenesisState()
 			// only allowedClients tendermint
 			state.ClientGenesis.Params.AllowedClients = []string{exported.Tendermint}
-			genesis[b.Name()] = cdc.MustMarshalJSON(state)
-		case feemarkettypes.ModuleName:
-			state := feemarkettypes.DefaultGenesisState()
-			state.Params.BaseFee = sdkmath.NewInt(500_000_000_000)
-			state.Params.MinGasPrice = sdk.NewDec(500_000_000_000)
-			state.Params.MinGasMultiplier = sdk.ZeroDec()
 			genesis[b.Name()] = cdc.MustMarshalJSON(state)
 		default:
 			genesis[b.Name()] = b.DefaultGenesis(cdc)

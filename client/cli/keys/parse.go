@@ -9,10 +9,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/spf13/cobra"
 
 	"github.com/functionx/fx-core/v5/client/cli"
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
 )
 
 const prefixFlag = "prefix"

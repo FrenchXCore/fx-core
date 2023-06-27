@@ -30,8 +30,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/evmos/ethermint/server/config"
-	ethermint "github.com/evmos/ethermint/types"
 	"github.com/spf13/cobra"
 	tmcfg "github.com/tendermint/tendermint/config"
 	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
@@ -42,7 +40,6 @@ import (
 	"google.golang.org/grpc"
 
 	fxcfg "github.com/functionx/fx-core/v5/server/config"
-	fxtypes "github.com/functionx/fx-core/v5/types"
 )
 
 // package-wide network lock to only allow one test network at a time
@@ -159,9 +156,6 @@ func New(logger Logger, baseDir string, cfg Config) (*Network, error) {
 	// l.Log("acquiring test network lock")
 	// lock.Lock()
 
-	if !ethermint.IsValidChainID(fxtypes.ChainIdWithEIP155()) {
-		return nil, fmt.Errorf("invalid chain-id: %s", cfg.ChainID)
-	}
 	logger.Logf("preparing test network with chain-id \"%s\"\n", cfg.ChainID)
 	startTime := time.Now()
 
@@ -297,7 +291,7 @@ func GenerateGenesisAndValidators(baseDir string, cfg *Config) ([]*Validator, er
 				appCfg.JSONRPC.Address = fmt.Sprintf("0.0.0.0:%s", jsonRPCPort)
 			}
 			appCfg.JSONRPC.Enable = true
-			appCfg.JSONRPC.API = config.GetAPINamespaces()
+			appCfg.JSONRPC.API = fxcfg.GetAPINamespaces()
 			appCfg.JSONRPC.WsAddress = ""
 
 			if cfg.EnableTMLogging {

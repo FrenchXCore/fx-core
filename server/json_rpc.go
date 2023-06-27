@@ -8,18 +8,19 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	ethlog "github.com/ethereum/go-ethereum/log"
 	ethrpc "github.com/ethereum/go-ethereum/rpc"
-	"github.com/evmos/ethermint/rpc"
-	"github.com/evmos/ethermint/server/config"
-	ethermint "github.com/evmos/ethermint/types"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 	rpcclient "github.com/tendermint/tendermint/rpc/jsonrpc/client"
 	"golang.org/x/net/netutil"
+
+	"github.com/functionx/fx-core/v5/server/config"
+	"github.com/functionx/fx-core/v5/server/rpc"
+	fxtypes "github.com/functionx/fx-core/v5/types"
 )
 
 // StartJSONRPC starts the JSON-RPC server
-func StartJSONRPC(svrCtx *server.Context, clientCtx client.Context, tmRPCAddr, tmEndpoint string, config *config.Config, indexer ethermint.EVMTxIndexer) (*http.Server, error) {
+func StartJSONRPC(svrCtx *server.Context, clientCtx client.Context, tmRPCAddr, tmEndpoint string, config *config.Config, indexer fxtypes.EVMTxIndexer) (*http.Server, error) {
 	if len(config.JSONRPC.WsAddress) > 0 {
 		svrCtx.Logger.Info("Starting JSON WebSocket server", "address", config.JSONRPC.WsAddress)
 

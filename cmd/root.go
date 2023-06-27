@@ -24,7 +24,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	"github.com/evmos/ethermint/crypto/hd"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
@@ -33,6 +32,7 @@ import (
 
 	"github.com/functionx/fx-core/v5/app"
 	"github.com/functionx/fx-core/v5/client/cli"
+	"github.com/functionx/fx-core/v5/crypto/hd"
 	fxserver "github.com/functionx/fx-core/v5/server"
 	fxcfg "github.com/functionx/fx-core/v5/server/config"
 	fxtypes "github.com/functionx/fx-core/v5/types"

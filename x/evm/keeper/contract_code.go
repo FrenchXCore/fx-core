@@ -10,10 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/ethermint/x/evm/statedb"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	fxtypes "github.com/functionx/fx-core/v5/types"
+	"github.com/functionx/fx-core/v5/x/evm/statedb"
 	"github.com/functionx/fx-core/v5/x/evm/types"
 )
 
@@ -43,7 +42,7 @@ func (k *Keeper) CreateContractWithCode(ctx sdk.Context, address common.Address,
 func (k *Keeper) UpdateContractCode(ctx sdk.Context, address common.Address, contractCode []byte) error {
 	acc := k.GetAccount(ctx, address)
 	if acc == nil {
-		return errorsmod.Wrap(evmtypes.ErrInvalidAccount, address.String())
+		return errorsmod.Wrap(types.ErrInvalidAccount, address.String())
 	}
 	codeHash := crypto.Keccak256Hash(contractCode).Bytes()
 	if bytes.Equal(codeHash, acc.CodeHash) {
@@ -128,7 +127,7 @@ func (k *Keeper) QueryContract(ctx sdk.Context, from, contract common.Address, a
 }
 
 // ApplyContract apply contract with args
-func (k *Keeper) ApplyContract(ctx sdk.Context, from, contract common.Address, abi abi.ABI, method string, constructorData ...interface{}) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyContract(ctx sdk.Context, from, contract common.Address, abi abi.ABI, method string, constructorData ...interface{}) (*types.MsgEthereumTxResponse, error) {
 	args, err := abi.Pack(method, constructorData...)
 	if err != nil {
 		return nil, errorsmod.Wrap(types.ErrABIPack, err.Error())

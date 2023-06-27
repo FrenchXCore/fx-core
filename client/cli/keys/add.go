@@ -17,9 +17,10 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/go-bip39"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
+
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
 )
 
 const (

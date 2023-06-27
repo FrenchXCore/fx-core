@@ -5,19 +5,19 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	ethermint "github.com/evmos/ethermint/types"
-	"github.com/evmos/ethermint/x/evm/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	fxtypes "github.com/functionx/fx-core/v5/types"
+	"github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 // InitGenesis initializes genesis state based on exported genesis
-func (k *Keeper) InitGenesis(ctx sdk.Context, accountKeeper types.AccountKeeper, data types.GenesisState) []abci.ValidatorUpdate {
+func (k *Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) []abci.ValidatorUpdate {
 	if err := k.SetParams(ctx, data.Params); err != nil {
-		panic(err)
+		panic(fmt.Errorf("error setting params %s", err))
 	}
 	// ensure evm module account is set
 	if acc := k.accountKeeper.GetModuleAccount(ctx, types.ModuleName); acc == nil {
@@ -28,20 +28,24 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, accountKeeper types.AccountKeeper,
 		address := common.HexToAddress(account.Address)
 		accAddress := sdk.AccAddress(address.Bytes())
 		// check that the EVM balance the matches the account balance
-		acc := accountKeeper.GetAccount(ctx, accAddress)
+		acc := k.accountKeeper.GetAccount(ctx, accAddress)
 		if acc == nil {
 			panic(fmt.Errorf("account not found for address %s", account.Address))
 		}
 
-		ethAcct, ok := acc.(ethermint.EthAccountI)
+		ethAcct, ok := acc.(fxtypes.EthAccountI)
 		if !ok {
 			panic(fmt.Errorf("account %s must be an EthAccount interface, got %T", account.Address, acc))
 		}
 
 		code := common.Hex2Bytes(account.Code)
 		codeHash := crypto.Keccak256Hash(code)
-		if !bytes.Equal(ethAcct.GetCodeHash().Bytes(), codeHash.Bytes()) {
-			panic("code don't match codeHash")
+
+		// we ignore the empty Code hash checking, see ethermint PR#1234
+		if len(account.Code) != 0 && !bytes.Equal(ethAcct.GetCodeHash().Bytes(), codeHash.Bytes()) {
+			s := "the evm state code doesn't match with the codehash\n"
+			panic(fmt.Sprintf("%s account: %s , evm state codehash: %v, ethAccount codehash: %v, evm state code: %s\n",
+				s, account.Address, codeHash, ethAcct.GetCodeHash(), account.Code))
 		}
 
 		k.SetCode(ctx, codeHash.Bytes(), code)
@@ -63,4 +67,34 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, accountKeeper types.AccountKeeper,
 	}
 
 	return []abci.ValidatorUpdate{}
+}
+
+// ExportGenesis exports genesis state of the EVM module
+func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
+	var ethGenAccounts []types.GenesisAccount
+	k.accountKeeper.IterateAccounts(ctx, func(account authtypes.AccountI) bool {
+		ethAccount, ok := account.(fxtypes.EthAccountI)
+		if !ok {
+			// ignore non EthAccounts
+			return false
+		}
+
+		addr := ethAccount.EthAddress()
+
+		storage := k.GetAccountStorage(ctx, addr)
+
+		genAccount := types.GenesisAccount{
+			Address: addr.String(),
+			Code:    common.Bytes2Hex(k.GetCode(ctx, ethAccount.GetCodeHash())),
+			Storage: storage,
+		}
+
+		ethGenAccounts = append(ethGenAccounts, genAccount)
+		return false
+	})
+
+	return &types.GenesisState{
+		Accounts: ethGenAccounts,
+		Params:   k.GetParams(ctx),
+	}
 }

@@ -26,16 +26,16 @@ import (
 	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 	ibccoretypes "github.com/cosmos/ibc-go/v6/modules/core/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v6/modules/light-clients/07-tendermint/types"
-	hd2 "github.com/evmos/ethermint/crypto/hd"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	dbm "github.com/tendermint/tm-db"
 
 	"github.com/functionx/fx-core/v5/app"
+	hd2 "github.com/functionx/fx-core/v5/crypto/hd"
 	fxcfg "github.com/functionx/fx-core/v5/server/config"
 	"github.com/functionx/fx-core/v5/testutil/network"
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	ethtypes "github.com/functionx/fx-core/v5/x/eth/types"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 // DefaultNetworkConfig returns a sane default configuration suitable for nearly all

@@ -11,8 +11,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
+
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 // DeductFeeDecorator deducts fees from the first signer of the tx

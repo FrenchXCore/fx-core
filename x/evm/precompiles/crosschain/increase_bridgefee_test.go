@@ -10,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/stretchr/testify/require"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/functionx/fx-core/v5/x/erc20/types"
 	ethtypes "github.com/functionx/fx-core/v5/x/eth/types"
 	"github.com/functionx/fx-core/v5/x/evm/precompiles/crosschain"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 func TestIncreaseBridgeFeeABI(t *testing.T) {

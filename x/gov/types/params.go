@@ -14,7 +14,7 @@ import (
 
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	erc20types "github.com/functionx/fx-core/v5/x/erc20/types"
-	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
+	evmtypesfx "github.com/functionx/fx-core/v5/x/evm/types/fx"
 )
 
 var (
@@ -56,7 +56,7 @@ func NewEGFParam(egfDepositThreshold sdk.Coin, claimRatio string) *EGFParams {
 
 func DefaultParams() *Params {
 	p := govv1.DefaultParams()
-	return NewParam(sdk.MsgTypeURL(&evmtypes.MsgCallContract{}),
+	return NewParam(sdk.MsgTypeURL(&evmtypesfx.MsgCallContract{}),
 		p.DepositParams.GetMinDeposit(),
 		sdk.NewCoin(fxtypes.DefaultDenom, DefaultMinInitialDeposit),
 		&DefaultEvmVotingPeriod,
@@ -99,7 +99,7 @@ func Erc20ProposalParams(minDeposit []sdk.Coin, minInitialDeposit sdk.Coin, voti
 // EVMProposalParams register default evm parameters
 func EVMProposalParams(minDeposit []sdk.Coin, minInitialDeposit sdk.Coin, votingPeriod *time.Duration, quorum string, maxDepositPeriod *time.Duration, threshold string, vetoThreshold string) []*Params {
 	evmMsgType := []string{
-		sdk.MsgTypeURL(&evmtypes.MsgCallContract{}),
+		sdk.MsgTypeURL(&evmtypesfx.MsgCallContract{}),
 	}
 	var baseParams []*Params
 	for _, msgType := range evmMsgType {

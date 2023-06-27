@@ -7,11 +7,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 
 	"github.com/functionx/fx-core/v5/testutil/helpers"
 	fxtypes "github.com/functionx/fx-core/v5/types"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 func (suite *KeeperTestSuite) TestKeeper_CreateContractWithCode() {

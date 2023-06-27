@@ -6,12 +6,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/evmos/ethermint/server/config"
-	"github.com/evmos/ethermint/x/evm/statedb"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/functionx/fx-core/v5/ante"
+	"github.com/functionx/fx-core/v5/server/config"
 	"github.com/functionx/fx-core/v5/testutil/helpers"
+	"github.com/functionx/fx-core/v5/x/evm/statedb"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 func (suite *AnteTestSuite) TestEthSigVerificationDecorator() {
@@ -234,9 +234,7 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 	suite.Require().Equal(int64(500000000000), baseFee.Int64())
 
 	dynamicFeeTx := evmtypes.NewTxContract(suite.app.EvmKeeper.ChainID(), 1, big.NewInt(10), tx2GasLimit,
-		nil, // gasPrice
-		new(big.Int).Add(baseFee, big.NewInt(evmtypes.DefaultPriorityReduction.Int64()*2)), // gasFeeCap
-		evmtypes.DefaultPriorityReduction.BigInt(),                                         // gasTipCap
+		nil, new(big.Int).Add(baseFee, big.NewInt(1e6*2)), big.NewInt(1e6),
 		nil, &ethtypes.AccessList{{Address: addr, StorageKeys: nil}})
 	dynamicFeeTx.From = addr.Hex()
 	dynamicFeeTxPriority := int64(1)

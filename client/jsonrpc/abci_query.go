@@ -9,10 +9,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	etherminttypes "github.com/evmos/ethermint/types"
 	"github.com/gogo/protobuf/proto"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
+	fxtypes "github.com/functionx/fx-core/v5/types"
 	gravitytypes "github.com/functionx/fx-core/v5/x/gravity/types"
 )
 
@@ -23,7 +23,7 @@ func (c *NodeRPC) QueryAccount(address string) (authtypes.AccountI, error) {
 	}
 	var account authtypes.AccountI
 	if err = authtypes.ModuleCdc.UnmarshalInterfaceJSON(result.Response.Value, &account); err != nil {
-		account = new(etherminttypes.EthAccount)
+		account = new(fxtypes.EthAccount)
 		if err1 := legacy.Cdc.UnmarshalJSON(result.Response.Value, account); err1 != nil {
 			return nil, fmt.Errorf("%s: %s", err.Error(), err1.Error())
 		}

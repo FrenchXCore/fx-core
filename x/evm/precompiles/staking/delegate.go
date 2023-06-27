@@ -12,7 +12,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	"github.com/functionx/fx-core/v5/x/evm/types"
@@ -44,10 +43,10 @@ func (c *Contract) Delegate(ctx sdk.Context, evm *vm.EVM, contract *vm.Contract,
 	// sub evm balance and mint delegate amount
 	evm.StateDB.SubBalance(contract.Address(), amount)
 	coins := sdk.NewCoins(sdk.NewCoin(evmDenom, sdkmath.NewIntFromBigInt(amount)))
-	if err = c.bankKeeper.MintCoins(ctx, evmtypes.ModuleName, coins); err != nil {
+	if err = c.bankKeeper.MintCoins(ctx, types.ModuleName, coins); err != nil {
 		return nil, fmt.Errorf("mint operation failed: %s", err.Error())
 	}
-	if err = c.bankKeeper.SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, sender, coins); err != nil {
+	if err = c.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sender, coins); err != nil {
 		return nil, fmt.Errorf("send operation failed: %s", err.Error())
 	}
 
@@ -80,9 +79,9 @@ func (c *Contract) Delegate(ctx sdk.Context, evm *vm.EVM, contract *vm.Contract,
 func DelegateEmitEvents(ctx sdk.Context, delegator sdk.AccAddress, validator sdk.ValAddress, amount *big.Int, newShares sdk.Dec) {
 	if amount.IsInt64() {
 		defer func() {
-			telemetry.IncrCounter(1, evmtypes.ModuleName, "delegate")
+			telemetry.IncrCounter(1, types.ModuleName, "delegate")
 			telemetry.SetGaugeWithLabels(
-				[]string{"tx", "msg", evmtypes.TypeMsgEthereumTx},
+				[]string{"tx", "msg", types.TypeMsgEthereumTx},
 				float32(amount.Int64()),
 				[]metrics.Label{telemetry.NewLabel("denom", fxtypes.DefaultDenom)},
 			)
@@ -98,7 +97,7 @@ func DelegateEmitEvents(ctx sdk.Context, delegator sdk.AccAddress, validator sdk
 		),
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, evmtypes.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(sdk.AttributeKeySender, delegator.String()),
 		),
 	})

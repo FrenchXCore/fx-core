@@ -10,8 +10,8 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	fxgovtypes "github.com/functionx/fx-core/v5/x/gov/types"
 	"github.com/functionx/fx-core/v5/x/migrate/types"

@@ -1,4 +1,4 @@
-package types
+package types_test
 
 import (
 	"testing"
@@ -6,6 +6,8 @@ import (
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/functionx/fx-core/v5/x/erc20/types"
 )
 
 type ParamsTestSuite struct {
@@ -17,24 +19,24 @@ func TestParamsTestSuite(t *testing.T) {
 }
 
 func (suite *ParamsTestSuite) TestParamKeyTable() {
-	suite.Require().IsType(paramtypes.KeyTable{}, ParamKeyTable())
+	suite.Require().IsType(paramtypes.KeyTable{}, types.ParamKeyTable())
 }
 
 func (suite *ParamsTestSuite) TestParamsValidate() {
 	testCases := []struct {
 		name     string
-		params   Params
+		params   types.Params
 		expError bool
 	}{
-		{"default", DefaultParams(), false},
+		{"default", types.DefaultParams(), false},
 		{
 			"valid",
-			NewParams(true, true, 12*time.Hour),
+			types.NewParams(true, true, 12*time.Hour),
 			false,
 		},
 		{
 			"empty",
-			Params{
+			types.Params{
 				IbcTimeout: 12 * time.Hour,
 			},
 			false,
@@ -53,6 +55,6 @@ func (suite *ParamsTestSuite) TestParamsValidate() {
 }
 
 func (suite *ParamsTestSuite) TestParamsValidatePriv() {
-	suite.Require().Error(validateBool(1))
-	suite.Require().NoError(validateBool(true))
+	suite.Require().Error(types.ValidateBool(1))
+	suite.Require().NoError(types.ValidateBool(true))
 }

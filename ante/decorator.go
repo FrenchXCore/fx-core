@@ -15,7 +15,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
+
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
 )
 
 var (

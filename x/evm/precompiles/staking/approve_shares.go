@@ -10,9 +10,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	"github.com/functionx/fx-core/v5/x/evm/types"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 	fxstakingtypes "github.com/functionx/fx-core/v5/x/staking/types"
 )
 
@@ -22,7 +21,7 @@ func (c *Contract) ApproveShares(ctx sdk.Context, evm *vm.EVM, contract *vm.Cont
 	}
 	// parse args
 	var args ApproveSharesArgs
-	if err := types.ParseMethodArgs(ApproveSharesMethod, &args, contract.Input[4:]); err != nil {
+	if err := evmtypes.ParseMethodArgs(ApproveSharesMethod, &args, contract.Input[4:]); err != nil {
 		return nil, err
 	}
 	// owner

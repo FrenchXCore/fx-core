@@ -38,7 +38,7 @@ func DefaultParams() Params {
 	}
 }
 
-func validateBool(i interface{}) error {
+func ValidateBool(i interface{}) error {
 	_, ok := i.(bool)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -47,7 +47,7 @@ func validateBool(i interface{}) error {
 	return nil
 }
 
-func validateTimeDuration(i interface{}) error {
+func ValidateTimeDuration(i interface{}) error {
 	_, ok := i.(time.Duration)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -59,9 +59,9 @@ func validateTimeDuration(i interface{}) error {
 // ParamSetPairs returns the parameter set pairs.
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyEnableErc20, &p.EnableErc20, validateBool),
-		paramtypes.NewParamSetPair(ParamStoreKeyEnableEVMHook, &p.EnableEVMHook, validateBool),
-		paramtypes.NewParamSetPair(ParamStoreKeyIBCTimeout, &p.IbcTimeout, validateTimeDuration),
+		paramtypes.NewParamSetPair(ParamStoreKeyEnableErc20, &p.EnableErc20, ValidateBool),
+		paramtypes.NewParamSetPair(ParamStoreKeyEnableEVMHook, &p.EnableEVMHook, ValidateBool),
+		paramtypes.NewParamSetPair(ParamStoreKeyIBCTimeout, &p.IbcTimeout, ValidateTimeDuration),
 	}
 }
 

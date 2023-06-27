@@ -13,7 +13,6 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	"github.com/ethereum/go-ethereum/common"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/stretchr/testify/require"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/functionx/fx-core/v5/x/erc20/types"
 	ethtypes "github.com/functionx/fx-core/v5/x/eth/types"
 	"github.com/functionx/fx-core/v5/x/evm/precompiles/crosschain"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 func TestCrossChainABI(t *testing.T) {

@@ -24,7 +24,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
 	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
-	srvflags "github.com/evmos/ethermint/server/flags"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -148,7 +147,7 @@ func New(
 	myApp.MountTransientStores(myApp.GetTransientStoreKey())
 	myApp.MountMemoryStores(myApp.GetMemoryStoreKey())
 
-	maxGasWanted := cast.ToUint64(appOpts.Get(srvflags.EVMMaxTxGasWanted))
+	maxGasWanted := cast.ToUint64(appOpts.Get(fxcfg.EVMMaxTxGasWanted))
 	anteOptions := fxante.HandlerOptions{
 		AccountKeeper:              myApp.AccountKeeper,
 		BankKeeper:                 myApp.BankKeeper,

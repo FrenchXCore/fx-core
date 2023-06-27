@@ -46,13 +46,9 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
-	srvflags "github.com/evmos/ethermint/server/flags"
-	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 	"github.com/spf13/cast"
 
+	fxcfg "github.com/functionx/fx-core/v5/server/config"
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	arbitrumtypes "github.com/functionx/fx-core/v5/x/arbitrum/types"
 	avalanchetypes "github.com/functionx/fx-core/v5/x/avalanche/types"
@@ -64,7 +60,10 @@ import (
 	erc20keeper "github.com/functionx/fx-core/v5/x/erc20/keeper"
 	erc20types "github.com/functionx/fx-core/v5/x/erc20/types"
 	ethtypes "github.com/functionx/fx-core/v5/x/eth/types"
-	fxevmkeeper "github.com/functionx/fx-core/v5/x/evm/keeper"
+	evmkeeper "github.com/functionx/fx-core/v5/x/evm/keeper"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
+	feemarketkeeper "github.com/functionx/fx-core/v5/x/feemarket/keeper"
+	feemarkettypes "github.com/functionx/fx-core/v5/x/feemarket/types"
 	fxgovkeeper "github.com/functionx/fx-core/v5/x/gov/keeper"
 	fxgovtypes "github.com/functionx/fx-core/v5/x/gov/types"
 	gravitytypes "github.com/functionx/fx-core/v5/x/gravity/types"
@@ -127,7 +126,7 @@ type AppKeepers struct {
 	CrosschainKeeper crosschainkeeper.RouterKeeper
 	CrossChainKeepers
 
-	EvmKeeper       *fxevmkeeper.Keeper
+	EvmKeeper       *evmkeeper.Keeper
 	FeeMarketKeeper feemarketkeeper.Keeper
 	Erc20Keeper     erc20keeper.Keeper
 	MigrateKeeper   migratekeeper.Keeper
@@ -296,22 +295,18 @@ func NewAppKeeper(
 		appKeepers.tkeys[feemarkettypes.TransientKey],
 		appKeepers.GetSubspace(feemarkettypes.ModuleName),
 	)
-	appKeepers.EvmKeeper = fxevmkeeper.NewKeeper(
-		evmkeeper.NewKeeper(
-			appCodec,
-			appKeepers.keys[evmtypes.StoreKey],
-			appKeepers.tkeys[evmtypes.TransientKey],
-			authtypes.NewModuleAddress(govtypes.ModuleName),
-			appKeepers.AccountKeeper,
-			appKeepers.BankKeeper,
-			&appKeepers.StakingKeeper,
-			appKeepers.FeeMarketKeeper,
-			cast.ToString(appOpts.Get(srvflags.EVMTracer)),
-			appKeepers.GetSubspace(evmtypes.ModuleName),
-		),
+	appKeepers.EvmKeeper = evmkeeper.NewKeeper(
+		appCodec,
+		appKeepers.keys[evmtypes.StoreKey],
+		appKeepers.tkeys[evmtypes.TransientKey],
+		authtypes.NewModuleAddress(govtypes.ModuleName),
 		appKeepers.AccountKeeper,
+		appKeepers.BankKeeper,
+		&appKeepers.StakingKeeper,
+		appKeepers.FeeMarketKeeper,
+		cast.ToString(appOpts.Get(fxcfg.EVMTracer)),
+		appKeepers.GetSubspace(evmtypes.ModuleName),
 	)
-	appKeepers.EvmKeeper = appKeepers.EvmKeeper.SetHooks(evmkeeper.NewMultiEvmHooks())
 
 	appKeepers.Erc20Keeper = erc20keeper.NewKeeper(
 		appKeepers.keys[erc20types.StoreKey],
@@ -553,7 +548,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ethtypes.ModuleName)
 	paramsKeeper.Subspace(trontypes.ModuleName)
 
-	// ethermint subspaces
+	// evm subspaces
 	paramsKeeper.Subspace(evmtypes.ModuleName).WithKeyTable(evmtypes.ParamKeyTable()) // nolint: staticcheck
 	paramsKeeper.Subspace(feemarkettypes.ModuleName).WithKeyTable(feemarkettypes.ParamKeyTable())
 	paramsKeeper.Subspace(erc20types.ModuleName)

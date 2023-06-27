@@ -14,13 +14,12 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	ethermint "github.com/evmos/ethermint/types"
 	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/functionx/fx-core/v5/app"
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
 	"github.com/functionx/fx-core/v5/testutil/helpers"
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	migratetypes "github.com/functionx/fx-core/v5/x/migrate/types"
@@ -57,7 +56,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// account key
 	suite.secp256k1PrivKey = secp256k1.GenPrivKey()
-	acc := &ethermint.EthAccount{
+	acc := &fxtypes.EthAccount{
 		BaseAccount: authtypes.NewBaseAccount(suite.secp256k1PrivKey.PubKey().Address().Bytes(), nil, 0, 0),
 		CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 	}
@@ -103,7 +102,7 @@ func (suite *KeeperTestSuite) GenerateAcc(num int) []cryptotypes.PrivKey {
 		err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, minttypes.ModuleName, privateKey.PubKey().Address().Bytes(), sdk.NewCoins(amount))
 		suite.Require().NoError(err)
 
-		acc := &ethermint.EthAccount{
+		acc := &fxtypes.EthAccount{
 			BaseAccount: authtypes.NewBaseAccount(privateKey.PubKey().Address().Bytes(), privateKey.PubKey(), 0, 0),
 			CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 		}

@@ -9,11 +9,11 @@ import (
 	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	"github.com/ethereum/go-ethereum/common"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	"github.com/functionx/fx-core/v5/x/erc20/types"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 type Erc20Keeper interface {

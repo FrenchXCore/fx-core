@@ -13,11 +13,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/evmos/ethermint/x/evm/types"
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	fxevmtypes "github.com/functionx/fx-core/v5/x/evm/types"
+	"github.com/functionx/fx-core/v5/x/evm/types"
+	typesfx "github.com/functionx/fx-core/v5/x/evm/types/fx"
 )
 
 var _ types.MsgServer = &Keeper{}
@@ -129,7 +129,24 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 	return response, nil
 }
 
-func (k *Keeper) CallContract(goCtx context.Context, msg *fxevmtypes.MsgCallContract) (*fxevmtypes.MsgCallContractResponse, error) {
+// UpdateParams implements the gRPC MsgServer interface. When an UpdateParams
+// proposal passes, it updates the module parameters. The update can only be
+// performed if the requested authority is the Cosmos SDK governance module
+// account.
+func (k *Keeper) UpdateParams(goCtx context.Context, req *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	if k.authority.String() != req.Authority {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority, expected %s, got %s", k.authority.String(), req.Authority)
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := k.SetParams(ctx, req.Params); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgUpdateParamsResponse{}, nil
+}
+
+func (k *Keeper) CallContract(goCtx context.Context, msg *typesfx.MsgCallContract) (*typesfx.MsgCallContractResponse, error) {
 	if !strings.EqualFold(k.GetAuthority().String(), msg.Authority) {
 		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority, expected %s, got %s", k.GetAuthority().String(), msg.Authority)
 	}
@@ -139,9 +156,9 @@ func (k *Keeper) CallContract(goCtx context.Context, msg *fxevmtypes.MsgCallCont
 	if account == nil || !account.IsContract() {
 		return nil, errorsmod.Wrapf(govtypes.ErrInvalidProposalMsg, "contract %s not found", contract.Hex())
 	}
-	_, err := k.CallEVMWithoutGas(ctx, k.module, &contract, common.Hex2Bytes(msg.Data), true)
+	_, err := k.CallEVMWithoutGas(ctx, k.moduleAddress, &contract, common.Hex2Bytes(msg.Data), true)
 	if err != nil {
 		return nil, err
 	}
-	return &fxevmtypes.MsgCallContractResponse{}, nil
+	return &typesfx.MsgCallContractResponse{}, nil
 }

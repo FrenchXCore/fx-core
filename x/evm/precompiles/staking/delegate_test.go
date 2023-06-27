@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/stretchr/testify/require"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/functionx/fx-core/v5/testutil/helpers"
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	"github.com/functionx/fx-core/v5/x/evm/precompiles/staking"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 func TestStakingDelegateABI(t *testing.T) {

@@ -9,10 +9,10 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	hd2 "github.com/evmos/ethermint/crypto/hd"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/functionx/fx-core/v5/app"
+	hd2 "github.com/functionx/fx-core/v5/crypto/hd"
 	"github.com/functionx/fx-core/v5/testutil"
 	"github.com/functionx/fx-core/v5/testutil/helpers"
 	"github.com/functionx/fx-core/v5/testutil/network"

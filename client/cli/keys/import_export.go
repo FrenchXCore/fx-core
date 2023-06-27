@@ -18,9 +18,10 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	hd2 "github.com/evmos/ethermint/crypto/hd"
 	"github.com/spf13/cobra"
+
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
+	hd2 "github.com/functionx/fx-core/v5/crypto/hd"
 )
 
 const (

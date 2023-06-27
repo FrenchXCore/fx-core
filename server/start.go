@@ -30,11 +30,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	ethmetricsexp "github.com/ethereum/go-ethereum/metrics/exp"
-	"github.com/evmos/ethermint/indexer"
-	ethermintserver "github.com/evmos/ethermint/server"
-	ethermintconfig "github.com/evmos/ethermint/server/config"
-	srvflags "github.com/evmos/ethermint/server/flags"
-	ethermint "github.com/evmos/ethermint/types"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	abciserver "github.com/tendermint/tendermint/abci/server"
@@ -49,10 +44,12 @@ import (
 	"github.com/tendermint/tendermint/rpc/client/local"
 	"github.com/tendermint/tendermint/store"
 	tmtypes "github.com/tendermint/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	fxcfg "github.com/functionx/fx-core/v5/server/config"
+	"github.com/functionx/fx-core/v5/server/indexer"
 	fxtypes "github.com/functionx/fx-core/v5/types"
 )
 
@@ -132,7 +129,7 @@ which accepts a path for the resulting pprof file.
 				clientCtx.HomeDir = serverCtx.Config.RootDir
 			}
 
-			if !serverCtx.Viper.GetBool(srvflags.WithTendermint) {
+			if !serverCtx.Viper.GetBool(fxcfg.WithTendermint) {
 				serverCtx.Logger.Info("starting ABCI without Tendermint")
 				return wrapCPUProfile(serverCtx, func() error {
 					return startStandAlone(serverCtx, appCreator)
@@ -147,55 +144,55 @@ which accepts a path for the resulting pprof file.
 
 	cmd.Flags().StringSlice(FlagLogFilter, nil, `The logging filter can discard custom log type (ABCIQuery)`)
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
-	cmd.Flags().Bool(srvflags.WithTendermint, true, "Run abci app embedded in-process with tendermint")
-	cmd.Flags().String(srvflags.Address, "tcp://0.0.0.0:26658", "Listen address")
-	cmd.Flags().String(srvflags.Transport, "socket", "Transport protocol: socket, grpc")
-	cmd.Flags().String(srvflags.TraceStore, "", "Enable KVStore tracing to an output file")
+	cmd.Flags().Bool(fxcfg.WithTendermint, true, "Run abci app embedded in-process with tendermint")
+	cmd.Flags().String(fxcfg.Address, "tcp://0.0.0.0:26658", "Listen address")
+	cmd.Flags().String(fxcfg.Transport, "socket", "Transport protocol: socket, grpc")
+	cmd.Flags().String(fxcfg.TraceStore, "", "Enable KVStore tracing to an output file")
 	cmd.Flags().String(server.FlagMinGasPrices, "", "Minimum gas prices to accept for transactions; Any fee in a tx must meet this minimum (e.g. 0.01photon;0.0001stake)")
 	cmd.Flags().IntSlice(server.FlagUnsafeSkipUpgrades, []int{}, "Skip a set of upgrade heights to continue the old binary")
 	cmd.Flags().Uint64(server.FlagHaltHeight, 0, "Block height at which to gracefully halt the chain and shutdown the node")
 	cmd.Flags().Uint64(server.FlagHaltTime, 0, "Minimum block time (in Unix seconds) at which to gracefully halt the chain and shutdown the node")
 	cmd.Flags().Bool(server.FlagInterBlockCache, true, "Enable inter-block caching")
-	cmd.Flags().String(srvflags.CPUProfile, "", "Enable CPU profiling and write to the provided file")
+	cmd.Flags().String(fxcfg.CPUProfile, "", "Enable CPU profiling and write to the provided file")
 	cmd.Flags().Bool(server.FlagTrace, false, "Provide full stack traces for errors in ABCI Log")
 	cmd.Flags().String(server.FlagPruning, pruningtypes.PruningOptionDefault, "Pruning strategy (default|nothing|everything|custom)")
 	cmd.Flags().Uint64(server.FlagPruningKeepRecent, 0, "Number of recent heights to keep on disk (ignored if pruning is not 'custom')")
 	cmd.Flags().Uint64(server.FlagPruningInterval, 0, "Height interval at which pruned heights are removed from disk (ignored if pruning is not 'custom')")
 	cmd.Flags().Uint(server.FlagInvCheckPeriod, 0, "Assert registered invariants every N blocks")
 	cmd.Flags().Uint64(server.FlagMinRetainBlocks, 0, "Minimum block height offset during ABCI commit to prune Tendermint blocks")
-	cmd.Flags().String(srvflags.AppDBBackend, "", "The type of database for application and snapshots databases")
+	cmd.Flags().String(fxcfg.AppDBBackend, "", "The type of database for application and snapshots databases")
 
-	cmd.Flags().Bool(srvflags.GRPCOnly, false, "Start the node in gRPC query only mode without Tendermint process")
-	cmd.Flags().Bool(srvflags.GRPCEnable, true, "Define if the gRPC server should be enabled")
-	cmd.Flags().String(srvflags.GRPCAddress, serverconfig.DefaultGRPCAddress, "the gRPC server address to listen on")
-	cmd.Flags().Bool(srvflags.GRPCWebEnable, true, "Define if the gRPC-Web server should be enabled. (Note: gRPC must also be enabled.)")
-	cmd.Flags().String(srvflags.GRPCWebAddress, serverconfig.DefaultGRPCWebAddress, "The gRPC-Web server address to listen on")
+	cmd.Flags().Bool(fxcfg.GRPCOnly, false, "Start the node in gRPC query only mode without Tendermint process")
+	cmd.Flags().Bool(fxcfg.GRPCEnable, true, "Define if the gRPC server should be enabled")
+	cmd.Flags().String(fxcfg.GRPCAddress, serverconfig.DefaultGRPCAddress, "the gRPC server address to listen on")
+	cmd.Flags().Bool(fxcfg.GRPCWebEnable, true, "Define if the gRPC-Web server should be enabled. (Note: gRPC must also be enabled.)")
+	cmd.Flags().String(fxcfg.GRPCWebAddress, serverconfig.DefaultGRPCWebAddress, "The gRPC-Web server address to listen on")
 
-	cmd.Flags().Bool(srvflags.RPCEnable, false, "Defines if Cosmos-sdk REST server should be enabled")
-	cmd.Flags().Bool(srvflags.EnabledUnsafeCors, false, "Defines if CORS should be enabled (unsafe - use it at your own risk)")
+	cmd.Flags().Bool(fxcfg.RPCEnable, false, "Defines if Cosmos-sdk REST server should be enabled")
+	cmd.Flags().Bool(fxcfg.EnabledUnsafeCors, false, "Defines if CORS should be enabled (unsafe - use it at your own risk)")
 
-	cmd.Flags().Bool(srvflags.JSONRPCEnable, true, "Define if the JSON-RPC server should be enabled")
-	cmd.Flags().StringSlice(srvflags.JSONRPCAPI, ethermintconfig.GetDefaultAPINamespaces(), "Defines a list of JSON-RPC namespaces that should be enabled")
-	cmd.Flags().String(srvflags.JSONRPCAddress, ethermintconfig.DefaultJSONRPCAddress, "the JSON-RPC server address to listen on")
-	cmd.Flags().String(srvflags.JSONWsAddress, ethermintconfig.DefaultJSONRPCWsAddress, "the JSON-RPC WS server address to listen on")
-	cmd.Flags().Uint64(srvflags.JSONRPCGasCap, fxcfg.DefaultGasCap, "Sets a cap on gas that can be used in eth_call/estimateGas unit is aphoton (0=infinite)")
-	cmd.Flags().Float64(srvflags.JSONRPCTxFeeCap, ethermintconfig.DefaultTxFeeCap, "Sets a cap on transaction fee that can be sent via the RPC APIs (1 = default 1 photon)")
-	cmd.Flags().Int32(srvflags.JSONRPCFilterCap, ethermintconfig.DefaultFilterCap, "Sets the global cap for total number of filters that can be created")
-	cmd.Flags().Duration(srvflags.JSONRPCEVMTimeout, ethermintconfig.DefaultEVMTimeout, "Sets a timeout used for eth_call (0=infinite)")
-	cmd.Flags().Duration(srvflags.JSONRPCHTTPTimeout, ethermintconfig.DefaultHTTPTimeout, "Sets a read/write timeout for json-rpc http server (0=infinite)")
-	cmd.Flags().Duration(srvflags.JSONRPCHTTPIdleTimeout, ethermintconfig.DefaultHTTPIdleTimeout, "Sets a idle timeout for json-rpc http server (0=infinite)")
-	cmd.Flags().Bool(srvflags.JSONRPCAllowUnprotectedTxs, ethermintconfig.DefaultAllowUnprotectedTxs, "Allow for unprotected (non EIP155 signed) transactions to be submitted via the node's RPC when the global parameter is disabled")
-	cmd.Flags().Int32(srvflags.JSONRPCLogsCap, ethermintconfig.DefaultLogsCap, "Sets the max number of results can be returned from single `eth_getLogs` query")
-	cmd.Flags().Int32(srvflags.JSONRPCBlockRangeCap, ethermintconfig.DefaultBlockRangeCap, "Sets the max block range allowed for `eth_getLogs` query")
-	cmd.Flags().Int(srvflags.JSONRPCMaxOpenConnections, ethermintconfig.DefaultMaxOpenConnections, "Sets the maximum number of simultaneous connections for the server listener")
-	cmd.Flags().Bool(srvflags.JSONRPCEnableIndexer, false, "Enable the custom tx indexer for json-rpc")
-	cmd.Flags().Bool(srvflags.JSONRPCEnableMetrics, false, "Define if EVM rpc metrics server should be enabled")
+	cmd.Flags().Bool(fxcfg.JSONRPCEnable, true, "Define if the JSON-RPC server should be enabled")
+	cmd.Flags().StringSlice(fxcfg.JSONRPCAPI, fxcfg.GetDefaultAPINamespaces(), "Defines a list of JSON-RPC namespaces that should be enabled")
+	cmd.Flags().String(fxcfg.JSONRPCAddress, fxcfg.DefaultJSONRPCAddress, "the JSON-RPC server address to listen on")
+	cmd.Flags().String(fxcfg.JSONWsAddress, fxcfg.DefaultJSONRPCWsAddress, "the JSON-RPC WS server address to listen on")
+	cmd.Flags().Uint64(fxcfg.JSONRPCGasCap, fxcfg.DefaultGasCap, "Sets a cap on gas that can be used in eth_call/estimateGas unit is aphoton (0=infinite)")
+	cmd.Flags().Float64(fxcfg.JSONRPCTxFeeCap, fxcfg.DefaultTxFeeCap, "Sets a cap on transaction fee that can be sent via the RPC APIs (1 = default 1 photon)")
+	cmd.Flags().Int32(fxcfg.JSONRPCFilterCap, fxcfg.DefaultFilterCap, "Sets the global cap for total number of filters that can be created")
+	cmd.Flags().Duration(fxcfg.JSONRPCEVMTimeout, fxcfg.DefaultEVMTimeout, "Sets a timeout used for eth_call (0=infinite)")
+	cmd.Flags().Duration(fxcfg.JSONRPCHTTPTimeout, fxcfg.DefaultHTTPTimeout, "Sets a read/write timeout for json-rpc http server (0=infinite)")
+	cmd.Flags().Duration(fxcfg.JSONRPCHTTPIdleTimeout, fxcfg.DefaultHTTPIdleTimeout, "Sets a idle timeout for json-rpc http server (0=infinite)")
+	cmd.Flags().Bool(fxcfg.JSONRPCAllowUnprotectedTxs, fxcfg.DefaultAllowUnprotectedTxs, "Allow for unprotected (non EIP155 signed) transactions to be submitted via the node's RPC when the global parameter is disabled")
+	cmd.Flags().Int32(fxcfg.JSONRPCLogsCap, fxcfg.DefaultLogsCap, "Sets the max number of results can be returned from single `eth_getLogs` query")
+	cmd.Flags().Int32(fxcfg.JSONRPCBlockRangeCap, fxcfg.DefaultBlockRangeCap, "Sets the max block range allowed for `eth_getLogs` query")
+	cmd.Flags().Int(fxcfg.JSONRPCMaxOpenConnections, fxcfg.DefaultMaxOpenConnections, "Sets the maximum number of simultaneous connections for the server listener")
+	cmd.Flags().Bool(fxcfg.JSONRPCEnableIndexer, false, "Enable the custom tx indexer for json-rpc")
+	cmd.Flags().Bool(fxcfg.JSONRPCEnableMetrics, false, "Define if EVM rpc metrics server should be enabled")
 
-	cmd.Flags().String(srvflags.EVMTracer, ethermintconfig.DefaultEVMTracer, "the EVM tracer type to collect execution traces from the EVM transaction execution (json|struct|access_list|markdown)")
-	cmd.Flags().Uint64(srvflags.EVMMaxTxGasWanted, ethermintconfig.DefaultMaxTxGasWanted, "the gas wanted for each eth tx returned in ante handler in check tx mode")
+	cmd.Flags().String(fxcfg.EVMTracer, fxcfg.DefaultEVMTracer, "the EVM tracer type to collect execution traces from the EVM transaction execution (json|struct|access_list|markdown)")
+	cmd.Flags().Uint64(fxcfg.EVMMaxTxGasWanted, fxcfg.DefaultMaxTxGasWanted, "the gas wanted for each eth tx returned in ante handler in check tx mode")
 
-	cmd.Flags().String(srvflags.TLSCertPath, "", "the cert.pem file path for the server TLS configuration")
-	cmd.Flags().String(srvflags.TLSKeyPath, "", "the key.pem file path for the server TLS configuration")
+	cmd.Flags().String(fxcfg.TLSCertPath, "", "the cert.pem file path for the server TLS configuration")
+	cmd.Flags().String(fxcfg.TLSKeyPath, "", "the key.pem file path for the server TLS configuration")
 
 	cmd.Flags().Uint64(server.FlagStateSyncSnapshotInterval, 0, "State sync snapshot interval")
 	cmd.Flags().Uint32(server.FlagStateSyncSnapshotKeepRecent, 2, "State sync snapshot to keep")
@@ -211,8 +208,8 @@ which accepts a path for the resulting pprof file.
 }
 
 func startStandAlone(svrCtx *server.Context, appCreator types.AppCreator) error {
-	addr := svrCtx.Viper.GetString(srvflags.Address)
-	transport := svrCtx.Viper.GetString(srvflags.Transport)
+	addr := svrCtx.Viper.GetString(fxcfg.Address)
+	transport := svrCtx.Viper.GetString(fxcfg.Transport)
 	home := svrCtx.Viper.GetString(flags.FlagHome)
 
 	db, err := openDB(AppDBName, server.GetAppDBBackend(svrCtx.Viper), home)
@@ -225,7 +222,7 @@ func startStandAlone(svrCtx *server.Context, appCreator types.AppCreator) error 
 		}
 	}()
 
-	traceWriterFile := svrCtx.Viper.GetString(srvflags.TraceStore)
+	traceWriterFile := svrCtx.Viper.GetString(fxcfg.TraceStore)
 	traceWriter, err := openTraceWriter(traceWriterFile)
 	if err != nil {
 		return err
@@ -291,7 +288,7 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, appCreator
 		}
 	}()
 
-	traceWriter, err := openTraceWriter(svrCtx.Viper.GetString(srvflags.TraceStore))
+	traceWriter, err := openTraceWriter(svrCtx.Viper.GetString(fxcfg.TraceStore))
 	if err != nil {
 		svrCtx.Logger.Error("failed to open trace writer", "error", err.Error())
 		return err
@@ -318,7 +315,7 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, appCreator
 
 	var (
 		tmNode   *node.Node
-		gRPCOnly = svrCtx.Viper.GetBool(srvflags.GRPCOnly)
+		gRPCOnly = svrCtx.Viper.GetBool(fxcfg.GRPCOnly)
 	)
 
 	if gRPCOnly {
@@ -386,7 +383,7 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, appCreator
 
 	// Enable metrics if JSONRPC is enabled and --metrics is passed
 	// Flag not added in config to avoid user enabling in config without passing in CLI
-	if config.JSONRPC.Enable && svrCtx.Viper.GetBool(srvflags.JSONRPCEnableMetrics) {
+	if config.JSONRPC.Enable && svrCtx.Viper.GetBool(fxcfg.JSONRPCEnableMetrics) {
 		ethmetricsexp.Setup(config.JSONRPC.MetricsAddress)
 	}
 
@@ -444,9 +441,9 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, appCreator
 	}
 
 	errCh := make(chan error)
-	var idxer ethermint.EVMTxIndexer
+	var idxer fxtypes.EVMTxIndexer
 	if config.JSONRPC.EnableIndexer {
-		idxDB, err := ethermintserver.OpenIndexerDB(clientCtx.HomeDir, server.GetAppDBBackend(svrCtx.Viper))
+		idxDB, err := OpenIndexerDB(clientCtx.HomeDir, server.GetAppDBBackend(svrCtx.Viper))
 		if err != nil {
 			svrCtx.Logger.Error("failed to open evm indexer DB", "error", err.Error())
 			return err
@@ -454,7 +451,7 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, appCreator
 
 		idxLogger := svrCtx.Logger.With("module", "indexer-evm")
 		idxer = indexer.NewKVIndexer(idxDB, idxLogger, clientCtx)
-		indexerService := ethermintserver.NewEVMIndexerService(idxer, clientCtx.Client)
+		indexerService := NewEVMIndexerService(idxer, clientCtx.Client)
 		indexerService.SetLogger(idxLogger)
 
 		go func() {
@@ -570,6 +567,12 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, appCreator
 	return waitForQuitSignals(errCh)
 }
 
+// OpenIndexerDB opens the custom eth indexer db, using the same db backend as the main app
+func OpenIndexerDB(rootDir string, backendType dbm.BackendType) (dbm.DB, error) {
+	dataDir := filepath.Join(rootDir, "data")
+	return dbm.NewDB("evmindexer", backendType, dataDir)
+}
+
 func openTraceWriter(traceWriterFile string) (w io.WriteCloser, err error) {
 	if traceWriterFile == "" {
 		return
@@ -587,7 +590,7 @@ func openTraceWriter(traceWriterFile string) (w io.WriteCloser, err error) {
 //
 // NOTE: We expect the caller to handle graceful shutdown and signal handling.
 func wrapCPUProfile(ctx *server.Context, callback func() error) error {
-	if cpuProfile := ctx.Viper.GetString(srvflags.CPUProfile); cpuProfile != "" {
+	if cpuProfile := ctx.Viper.GetString(fxcfg.CPUProfile); cpuProfile != "" {
 		f, err := os.Create(cpuProfile)
 		if err != nil {
 			return err

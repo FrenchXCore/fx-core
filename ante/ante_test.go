@@ -23,8 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethparams "github.com/ethereum/go-ethereum/params"
-	"github.com/evmos/ethermint/x/evm/statedb"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
@@ -32,6 +30,8 @@ import (
 	"github.com/functionx/fx-core/v5/app"
 	"github.com/functionx/fx-core/v5/testutil/helpers"
 	fxtypes "github.com/functionx/fx-core/v5/types"
+	"github.com/functionx/fx-core/v5/x/evm/statedb"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 type AnteTestSuite struct {

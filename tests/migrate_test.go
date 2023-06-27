@@ -12,10 +12,10 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	hd2 "github.com/evmos/ethermint/crypto/hd"
 	"github.com/stretchr/testify/require"
 
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
+	hd2 "github.com/functionx/fx-core/v5/crypto/hd"
 	"github.com/functionx/fx-core/v5/testutil/helpers"
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	migratetypes "github.com/functionx/fx-core/v5/x/migrate/types"

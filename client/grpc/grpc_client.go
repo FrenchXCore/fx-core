@@ -27,7 +27,6 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	"github.com/gogo/protobuf/proto"
 	"google.golang.org/grpc"
@@ -38,6 +37,7 @@ import (
 	"github.com/functionx/fx-core/v5/client"
 	crosschaintypes "github.com/functionx/fx-core/v5/x/crosschain/types"
 	erc20types "github.com/functionx/fx-core/v5/x/erc20/types"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 	migratetypes "github.com/functionx/fx-core/v5/x/migrate/types"
 )
 

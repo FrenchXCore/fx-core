@@ -2,7 +2,6 @@ package server
 
 import (
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
-	ethermintserver "github.com/evmos/ethermint/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	tmcmd "github.com/tendermint/tendermint/cmd/cometbft/commands"
@@ -38,7 +37,7 @@ func TendermintCommand() *cobra.Command {
 		tmcmd.ResetStateCmd,
 		tmcmd.GenValidatorCmd,
 		tmcmd.GenNodeKeyCmd,
-		ethermintserver.NewIndexTxCmd(),
+		NewIndexTxCmd(),
 		// tmcmd.ResetPrivValidatorCmd,
 	)
 	return tendermintCmd

@@ -61,32 +61,6 @@ fi
   buf push --tag "$commit_hash"
 )
 
-# download ethermint proto
-commit_hash=$(go list -m -f '{{.Version}}' github.com/evmos/ethermint | awk -F- '{print $1}')
-if [ ! -f "./build/fork/ethermint-proto.zip" ]; then
-  echo "download ethermint $commit_hash"
-  wget -c "https://github.com/evmos/ethermint/archive/$commit_hash.zip" -O "./build/fork/ethermint-proto.zip"
-fi
-
-(
-  cd build/fork
-  rm -rf ethermint
-  unzip -q -o "./ethermint-proto.zip"
-  # shellcheck disable=SC2010
-  mv "$(ls | grep ethermint | grep -v grep | grep -v zip)" ethermint
-  rm -rf ethermint/.git
-
-  # buf push
-  cd ethermint/proto
-  # replace buf.yaml buf.build/evmos/ethermint => buf.build/functionx/ethermint
-  sed -i 's/buf.build\/evmos\/ethermint/buf.build\/'"$BUF_ORG"'\/ethermint/g' buf.yaml
-  #sed -i '.bak' 's/buf.build\/evmos\/ethermint/buf.build\/'"$BUF_ORG"'\/ethermint/g' buf.yaml
-  #rm buf.yaml.bak
-
-  echo "buf push ethermint proto with tag $commit_hash ..."
-  buf push --tag "$commit_hash"
-)
-
 # download ibc-go proto
 commit_hash=$(go list -m -f '{{.Version}}' github.com/cosmos/ibc-go/v6)
 if [ ! -f "./build/fork/ibc-go-proto.zip" ]; then

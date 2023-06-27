@@ -41,9 +41,6 @@ import (
 	ibc "github.com/cosmos/ibc-go/v6/modules/core"
 	ibcclientclient "github.com/cosmos/ibc-go/v6/modules/core/02-client/client"
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	"github.com/evmos/ethermint/x/feemarket"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	"github.com/functionx/fx-core/v5/x/arbitrum"
 	arbitrumtypes "github.com/functionx/fx-core/v5/x/arbitrum/types"
@@ -58,7 +55,10 @@ import (
 	erc20types "github.com/functionx/fx-core/v5/x/erc20/types"
 	"github.com/functionx/fx-core/v5/x/eth"
 	ethtypes "github.com/functionx/fx-core/v5/x/eth/types"
-	fxevm "github.com/functionx/fx-core/v5/x/evm"
+	"github.com/functionx/fx-core/v5/x/evm"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
+	"github.com/functionx/fx-core/v5/x/feemarket"
+	feemarkettypes "github.com/functionx/fx-core/v5/x/feemarket/types"
 	fxgov "github.com/functionx/fx-core/v5/x/gov"
 	fxibctransfer "github.com/functionx/fx-core/v5/x/ibc/applications/transfer"
 	fxibctransfertypes "github.com/functionx/fx-core/v5/x/ibc/applications/transfer/types"
@@ -145,7 +145,7 @@ var ModuleBasics = module.NewBasicManager(
 	tron.AppModuleBasic{},
 	arbitrum.AppModule{},
 	optimism.AppModule{},
-	fxevm.AppModuleBasic{},
+	evm.AppModuleBasic{},
 	feemarket.AppModuleBasic{},
 	erc20.AppModuleBasic{},
 	migrate.AppModuleBasic{},
@@ -185,7 +185,7 @@ func appModules(
 		tron.NewAppModule(app.TronKeeper, app.GetSubspace(trontypes.ModuleName)),
 		arbitrum.NewAppModule(app.ArbitrumKeeper),
 		optimism.NewAppModule(app.OptimismKeeper),
-		fxevm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.LegacyAmino(), app.GetKey(paramstypes.StoreKey), app.GetSubspace(evmtypes.ModuleName)),
+		evm.NewAppModule(app.EvmKeeper, app.GetSubspace(evmtypes.ModuleName)),
 		feemarket.NewAppModule(app.FeeMarketKeeper, app.GetSubspace(feemarkettypes.ModuleName)),
 		erc20.NewAppModule(app.Erc20Keeper, app.GetSubspace(erc20types.ModuleName)),
 		migrate.NewAppModule(app.MigrateKeeper),

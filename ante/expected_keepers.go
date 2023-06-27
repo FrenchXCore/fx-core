@@ -10,9 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/evmos/ethermint/x/evm/statedb"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+
+	"github.com/functionx/fx-core/v5/x/evm/statedb"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
+	feemarkettypes "github.com/functionx/fx-core/v5/x/feemarket/types"
 )
 
 // AccountKeeper defines the expected account keeper interface
@@ -26,6 +27,7 @@ type AccountKeeper interface {
 	SetAccount(ctx sdk.Context, account authtypes.AccountI)
 	RemoveAccount(ctx sdk.Context, account authtypes.AccountI)
 	GetParams(ctx sdk.Context) (params authtypes.Params)
+	GetModuleAccount(ctx sdk.Context, moduleName string) authtypes.ModuleAccountI
 }
 
 // FeegrantKeeper defines the expected feegrant keeper.

@@ -10,11 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/functionx/fx-core/v5/testutil/helpers"
 	fxtypes "github.com/functionx/fx-core/v5/types"
-	fxevmtypes "github.com/functionx/fx-core/v5/x/evm/types"
+	"github.com/functionx/fx-core/v5/x/evm/types"
+	typesfx "github.com/functionx/fx-core/v5/x/evm/types/fx"
 )
 
 func (suite *KeeperTestSuite) TestKeeper_EthereumTx() {
@@ -109,6 +109,40 @@ func (suite *KeeperTestSuite) TestKeeper_EthereumTx2() {
 	suite.Equal(balance, amount)
 }
 
+func (suite *KeeperTestSuite) TestUpdateParams() {
+	testCases := []struct {
+		name      string
+		request   *types.MsgUpdateParams
+		expectErr bool
+	}{
+		{
+			name:      "fail - invalid authority",
+			request:   &types.MsgUpdateParams{Authority: "foobar"},
+			expectErr: true,
+		},
+		{
+			name: "pass - valid Update msg",
+			request: &types.MsgUpdateParams{
+				Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+				Params:    types.DefaultParams(),
+			},
+			expectErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run("MsgUpdateParams", func() {
+			_, err := suite.app.EvmKeeper.UpdateParams(suite.ctx, tc.request)
+			if tc.expectErr {
+				suite.Require().Error(err)
+			} else {
+				suite.Require().NoError(err)
+			}
+		})
+	}
+}
+
 func (suite *KeeperTestSuite) TestKeeper_CallContract() {
 	erc20 := fxtypes.GetFIP20()
 	initializeArgs := []interface{}{"FunctionX USD", "fxUSD", uint8(18), suite.app.Erc20Keeper.ModuleAddress()}
@@ -124,7 +158,7 @@ func (suite *KeeperTestSuite) TestKeeper_CallContract() {
 	args, err := erc20.ABI.Pack("mint", suite.signer.Address(), amount)
 	suite.Require().NoError(err)
 
-	failMsg := &fxevmtypes.MsgCallContract{
+	failMsg := &typesfx.MsgCallContract{
 		Authority:       authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		ContractAddress: contractAddr.String(),
 		Data:            common.Bytes2Hex(args),
@@ -135,7 +169,7 @@ func (suite *KeeperTestSuite) TestKeeper_CallContract() {
 	_, err = suite.app.EvmKeeper.ApplyContract(suite.ctx, suite.signer.Address(), contract, erc20.ABI, "transferOwnership", common.BytesToAddress(suite.app.AccountKeeper.GetModuleAddress(types.ModuleName)))
 	suite.Require().NoError(err)
 	// CallContract
-	msg := &fxevmtypes.MsgCallContract{
+	msg := &typesfx.MsgCallContract{
 		Authority:       authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		ContractAddress: contractAddr.String(),
 		Data:            common.Bytes2Hex(args),

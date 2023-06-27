@@ -8,7 +8,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
+
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 type BankKeeper interface {

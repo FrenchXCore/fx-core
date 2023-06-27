@@ -14,8 +14,9 @@ import (
 	txsigning "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	tmlog "github.com/tendermint/tendermint/libs/log"
+
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
 )
 
 func NewAnteHandler(options HandlerOptions) sdk.AnteHandler {

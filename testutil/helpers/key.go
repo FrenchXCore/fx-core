@@ -15,9 +15,10 @@ import (
 	"github.com/cosmos/go-bip39"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	hd2 "github.com/evmos/ethermint/crypto/hd"
 	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
+
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
+	hd2 "github.com/functionx/fx-core/v5/crypto/hd"
 )
 
 func NewMnemonic() string {

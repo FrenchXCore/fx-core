@@ -1,9 +1,11 @@
-package types
+package types_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/functionx/fx-core/v5/x/erc20/types"
 )
 
 func TestSanitizeERC20Name(t *testing.T) {
@@ -21,7 +23,7 @@ func TestSanitizeERC20Name(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		name := SanitizeERC20Name(tc.erc20Name)
+		name := types.SanitizeERC20Name(tc.erc20Name)
 		require.Equal(t, tc.expErc20Name, name, tc.name)
 	}
 }

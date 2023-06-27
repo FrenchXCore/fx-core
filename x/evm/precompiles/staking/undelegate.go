@@ -13,7 +13,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	"github.com/functionx/fx-core/v5/x/evm/types"
@@ -97,9 +96,9 @@ func Undelegate(ctx sdk.Context, sk StakingKeeper, bk BankKeeper, delAddr sdk.Ac
 func UndelegateEmitEvents(ctx sdk.Context, delegator sdk.AccAddress, validator sdk.ValAddress, amount sdkmath.Int, completionTime time.Time) {
 	if amount.IsInt64() {
 		defer func() {
-			telemetry.IncrCounter(1, evmtypes.ModuleName, "undelegate")
+			telemetry.IncrCounter(1, types.ModuleName, "undelegate")
 			telemetry.SetGaugeWithLabels(
-				[]string{"tx", "msg", evmtypes.TypeMsgEthereumTx},
+				[]string{"tx", "msg", types.TypeMsgEthereumTx},
 				float32(amount.Int64()),
 				[]metrics.Label{telemetry.NewLabel("denom", fxtypes.DefaultDenom)},
 			)
@@ -115,7 +114,7 @@ func UndelegateEmitEvents(ctx sdk.Context, delegator sdk.AccAddress, validator s
 		),
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, evmtypes.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(sdk.AttributeKeySender, delegator.String()),
 		),
 	})

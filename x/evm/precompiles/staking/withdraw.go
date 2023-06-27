@@ -9,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/functionx/fx-core/v5/x/evm/types"
 )
@@ -80,7 +79,7 @@ func WithdrawEmitEvents(ctx sdk.Context, delegator sdk.AccAddress, amount sdk.Co
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, evmtypes.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(sdk.AttributeKeySender, delegator.String()),
 		),
 	)

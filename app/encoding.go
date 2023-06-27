@@ -11,10 +11,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	ethermintcodec "github.com/evmos/ethermint/crypto/codec"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	etherminttypes "github.com/evmos/ethermint/types"
 
+	cryptocodec "github.com/functionx/fx-core/v5/crypto/codec"
+	fxtypes "github.com/functionx/fx-core/v5/types"
 	crosschaintypes "github.com/functionx/fx-core/v5/x/crosschain/types"
 	gravitytypes "github.com/functionx/fx-core/v5/x/gravity/types"
 )
@@ -34,16 +33,15 @@ func MakeEncodingConfig() EncodingConfig {
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
-	ethermintcodec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	etherminttypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	cryptocodec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	cryptocodec.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	fxtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
 	crosschaintypes.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	crosschaintypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
 	gravitytypes.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	gravitytypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-
-	registerCryptoEthSecp256k1(encodingConfig.Amino)
 
 	govv1beta1.ModuleCdc = codec.NewAminoCodec(encodingConfig.Amino)
 	govv1.ModuleCdc = codec.NewAminoCodec(encodingConfig.Amino)
@@ -72,9 +70,4 @@ func makeEncodingConfig() EncodingConfig {
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	keyring.RegisterLegacyAminoCodec(amino)
 	return encodingConfig
-}
-
-func registerCryptoEthSecp256k1(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&ethsecp256k1.PubKey{}, ethsecp256k1.PubKeyName, nil)
-	cdc.RegisterConcrete(&ethsecp256k1.PrivKey{}, ethsecp256k1.PrivKeyName, nil)
 }

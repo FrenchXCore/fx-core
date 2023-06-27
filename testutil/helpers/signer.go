@@ -7,7 +7,8 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
+
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
 )
 
 var _ keyring.Signer = &Signer{}

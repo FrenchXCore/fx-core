@@ -33,7 +33,6 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
 	ibctestingtypes "github.com/cosmos/ibc-go/v6/testing/types"
-	etherminttypes "github.com/evmos/ethermint/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
@@ -334,7 +333,7 @@ func SignCheckDeliver(t *testing.T, txCfg client.TxConfig, app *baseapp.BaseApp,
 		})
 		var account authtypes.AccountI
 		if err := legacy.Cdc.UnmarshalJSON(response.Value, &account); err != nil {
-			account = new(etherminttypes.EthAccount)
+			account = new(fxtypes.EthAccount)
 			if err1 := legacy.Cdc.UnmarshalJSON(response.Value, account); err1 != nil {
 				panic(fmt.Errorf("%s: %s", err.Error(), err1.Error()))
 			}

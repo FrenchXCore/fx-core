@@ -13,7 +13,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/functionx/fx-core/v5/x/evm/types"
 	fxstakingtypes "github.com/functionx/fx-core/v5/x/staking/types"
@@ -38,7 +37,7 @@ func (c *Contract) TransferShares(ctx sdk.Context, evm *vm.EVM, contract *vm.Con
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, evmtypes.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(sdk.AttributeKeySender, sdk.AccAddress(contract.Caller().Bytes()).String()),
 		),
 	})
@@ -68,7 +67,7 @@ func (c *Contract) TransferFromShares(ctx sdk.Context, evm *vm.EVM, contract *vm
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, evmtypes.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(sdk.AttributeKeySender, sdk.AccAddress(contract.Caller().Bytes()).String()),
 		),
 	})
@@ -210,9 +209,9 @@ func decrementReferenceCount(k DistrKeeper, ctx sdk.Context, valAddr sdk.ValAddr
 func TransferSharesEmitEvents(ctx sdk.Context, validator sdk.ValAddress, from, recipient sdk.AccAddress, shares, token sdkmath.Int) {
 	if shares.IsInt64() {
 		defer func() {
-			telemetry.IncrCounter(1, evmtypes.ModuleName, "transfer_shares")
+			telemetry.IncrCounter(1, types.ModuleName, "transfer_shares")
 			telemetry.SetGaugeWithLabels(
-				[]string{"tx", "msg", evmtypes.TypeMsgEthereumTx},
+				[]string{"tx", "msg", types.TypeMsgEthereumTx},
 				float32(shares.Int64()),
 				[]metrics.Label{telemetry.NewLabel("validator", validator.String())},
 			)

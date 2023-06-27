@@ -14,10 +14,11 @@ import (
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	ethermint "github.com/evmos/ethermint/types"
-	"github.com/evmos/ethermint/x/evm/keeper"
-	"github.com/evmos/ethermint/x/evm/statedb"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
+
+	fxtypes "github.com/functionx/fx-core/v5/types"
+	"github.com/functionx/fx-core/v5/x/evm/keeper"
+	"github.com/functionx/fx-core/v5/x/evm/statedb"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 // EthSigVerificationDecorator validates an ethereum signatures
@@ -181,7 +182,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 		// Error: "gas wanted -1 is negative"
 		// For more information, see issue #1554
 		// https://github.com/evmos/ethermint/issues/1554
-		newCtx := ctx.WithGasMeter(ethermint.NewInfiniteGasMeterWithLimit(gasWanted))
+		newCtx := ctx.WithGasMeter(fxtypes.NewInfiniteGasMeterWithLimit(gasWanted))
 		return next(newCtx, tx, simulate)
 	}
 
@@ -248,7 +249,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 
 	ctx.EventManager().EmitEvents(events)
 
-	blockGasLimit := ethermint.BlockGasLimit(ctx)
+	blockGasLimit := fxtypes.BlockGasLimit(ctx)
 
 	// return error if the tx gas is greater than the block limit (max gas)
 
@@ -271,7 +272,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 	// FIXME: use a custom gas configuration that doesn't add any additional gas and only
 	// takes into account the gas consumed at the end of the EVM transaction.
 	newCtx := ctx.
-		WithGasMeter(ethermint.NewInfiniteGasMeterWithLimit(gasWanted)).
+		WithGasMeter(fxtypes.NewInfiniteGasMeterWithLimit(gasWanted)).
 		WithPriority(minPriority)
 
 	// we know that we have enough gas on the pool to cover the intrinsic gas

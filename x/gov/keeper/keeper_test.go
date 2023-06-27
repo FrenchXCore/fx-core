@@ -24,7 +24,7 @@ import (
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	crosschaintypes "github.com/functionx/fx-core/v5/x/crosschain/types"
 	erc20types "github.com/functionx/fx-core/v5/x/erc20/types"
-	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
+	evmtypesfx "github.com/functionx/fx-core/v5/x/evm/types/fx"
 	"github.com/functionx/fx-core/v5/x/gov/keeper"
 	"github.com/functionx/fx-core/v5/x/gov/types"
 )
@@ -353,7 +353,7 @@ func (suite *KeeperTestSuite) TestGetParams() {
 		suite.Require().EqualValues(params.Quorum, types.DefaultErc20Quorum.String())
 	}
 
-	params = suite.app.GovKeeper.GetParams(suite.ctx, sdk.MsgTypeURL(&evmtypes.MsgCallContract{}))
+	params = suite.app.GovKeeper.GetParams(suite.ctx, sdk.MsgTypeURL(&evmtypesfx.MsgCallContract{}))
 	suite.Require().NoError(params.ValidateBasic())
 	suite.Require().EqualValues(params.MinDeposit, depositParams.MinDeposit)
 	suite.Require().EqualValues(params.MinInitialDeposit.String(), sdk.NewCoin(fxtypes.DefaultDenom, types.DefaultMinInitialDeposit).String())

@@ -17,6 +17,8 @@ const (
 
 	DefaultDenom = "FX"
 	DenomUnit    = 18
+
+	DefaultEVMGasPrice = 20
 )
 
 // defaultNodeHome default home directories for the application daemon

@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -17,20 +18,196 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	ethparams "github.com/ethereum/go-ethereum/params"
-	etherminttypes "github.com/evmos/ethermint/types"
-	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
-	"github.com/evmos/ethermint/x/evm/statedb"
-	"github.com/evmos/ethermint/x/evm/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	fxtypes "github.com/functionx/fx-core/v5/types"
+	"github.com/functionx/fx-core/v5/x/evm/statedb"
+	"github.com/functionx/fx-core/v5/x/evm/types"
 )
+
+var _ types.QueryServer = Keeper{}
 
 const (
 	defaultTraceTimeout = 5 * time.Second
 )
 
+// Account implements the Query/Account gRPC method
+func (k Keeper) Account(c context.Context, req *types.QueryAccountRequest) (*types.QueryAccountResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if err := fxtypes.ValidateEthereumAddress(req.Address); err != nil {
+		return nil, status.Error(
+			codes.InvalidArgument, err.Error(),
+		)
+	}
+
+	addr := common.HexToAddress(req.Address)
+
+	ctx := sdk.UnwrapSDKContext(c)
+	acct := k.GetAccountOrEmpty(ctx, addr)
+
+	return &types.QueryAccountResponse{
+		Balance:  acct.Balance.String(),
+		CodeHash: common.BytesToHash(acct.CodeHash).Hex(),
+		Nonce:    acct.Nonce,
+	}, nil
+}
+
+func (k Keeper) CosmosAccount(c context.Context, req *types.QueryCosmosAccountRequest) (*types.QueryCosmosAccountResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if err := fxtypes.ValidateEthereumAddress(req.Address); err != nil {
+		return nil, status.Error(
+			codes.InvalidArgument, err.Error(),
+		)
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+
+	ethAddr := common.HexToAddress(req.Address)
+	cosmosAddr := sdk.AccAddress(ethAddr.Bytes())
+
+	account := k.accountKeeper.GetAccount(ctx, cosmosAddr)
+	res := types.QueryCosmosAccountResponse{
+		CosmosAddress: cosmosAddr.String(),
+	}
+
+	if account != nil {
+		res.Sequence = account.GetSequence()
+		res.AccountNumber = account.GetAccountNumber()
+	}
+
+	return &res, nil
+}
+
+// ValidatorAccount implements the Query/Balance gRPC method
+func (k Keeper) ValidatorAccount(c context.Context, req *types.QueryValidatorAccountRequest) (*types.QueryValidatorAccountResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	consAddr, err := sdk.ConsAddressFromBech32(req.ConsAddress)
+	if err != nil {
+		return nil, status.Error(
+			codes.InvalidArgument, err.Error(),
+		)
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	if !found {
+		return nil, fmt.Errorf("validator not found for %s", consAddr.String())
+	}
+
+	accAddr := sdk.AccAddress(validator.GetOperator())
+
+	res := types.QueryValidatorAccountResponse{
+		AccountAddress: accAddr.String(),
+	}
+
+	account := k.accountKeeper.GetAccount(ctx, accAddr)
+	if account != nil {
+		res.Sequence = account.GetSequence()
+		res.AccountNumber = account.GetAccountNumber()
+	}
+
+	return &res, nil
+}
+
+// Balance implements the Query/Balance gRPC method
+func (k Keeper) Balance(c context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if err := fxtypes.ValidateEthereumAddress(req.Address); err != nil {
+		return nil, status.Error(
+			codes.InvalidArgument,
+			types.ErrZeroAddress.Error(),
+		)
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+
+	balanceInt := k.GetBalance(ctx, common.HexToAddress(req.Address))
+
+	return &types.QueryBalanceResponse{
+		Balance: balanceInt.String(),
+	}, nil
+}
+
+// Storage implements the Query/Storage gRPC method
+func (k Keeper) Storage(c context.Context, req *types.QueryStorageRequest) (*types.QueryStorageResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if err := fxtypes.ValidateEthereumAddress(req.Address); err != nil {
+		return nil, status.Error(
+			codes.InvalidArgument,
+			types.ErrZeroAddress.Error(),
+		)
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+
+	address := common.HexToAddress(req.Address)
+	key := common.HexToHash(req.Key)
+
+	state := k.GetState(ctx, address, key)
+	stateHex := state.Hex()
+
+	return &types.QueryStorageResponse{
+		Value: stateHex,
+	}, nil
+}
+
+// Code implements the Query/Code gRPC method
+func (k Keeper) Code(c context.Context, req *types.QueryCodeRequest) (*types.QueryCodeResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if err := fxtypes.ValidateEthereumAddress(req.Address); err != nil {
+		return nil, status.Error(
+			codes.InvalidArgument,
+			types.ErrZeroAddress.Error(),
+		)
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+
+	address := common.HexToAddress(req.Address)
+	acct := k.GetAccountWithoutBalance(ctx, address)
+
+	var code []byte
+	if acct != nil && acct.IsContract() {
+		code = k.GetCode(ctx, common.BytesToHash(acct.CodeHash))
+	}
+
+	return &types.QueryCodeResponse{
+		Code: code,
+	}, nil
+}
+
+// Params implements the Query/Params gRPC method
+func (k Keeper) Params(c context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+	params := k.GetParams(ctx)
+
+	return &types.QueryParamsResponse{
+		Params: params,
+	}, nil
+}
+
 // EthCall implements eth_call rpc api.
-func (k *Keeper) EthCall(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error) {
+func (k Keeper) EthCall(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -42,11 +219,9 @@ func (k *Keeper) EthCall(c context.Context, req *types.EthCallRequest) (*types.M
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	chainID, err := getChainID(ctx, req.ChainId)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	cfg, err := k.EVMConfig(ctx, evmkeeper.GetProposerAddress(ctx, req.ProposerAddress), chainID)
+	chainID := getChainID(req.ChainId)
+
+	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -71,26 +246,23 @@ func (k *Keeper) EthCall(c context.Context, req *types.EthCallRequest) (*types.M
 	return res, nil
 }
 
-// EstimateGas implements eth_estimateGas rpc api with enable hook flag.
+// EstimateGas implements eth_estimateGas rpc api.
 //
 //gocyclo:ignore
-func (k *Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*types.EstimateGasResponse, error) {
+func (k Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*types.EstimateGasResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	chainID, err := getChainID(ctx, req.ChainId)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	chainID := getChainID(req.ChainId)
 
 	if req.GasCap < ethparams.TxGas {
-		return nil, status.Error(codes.InvalidArgument, "gas gasCap cannot be lower than 21,000")
+		return nil, status.Error(codes.InvalidArgument, "gas cap cannot be lower than 21,000")
 	}
 
 	var args types.TransactionArgs
-	err = json.Unmarshal(req.Args, &args)
+	err := json.Unmarshal(req.Args, &args)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -122,7 +294,7 @@ func (k *Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*typ
 		hi = req.GasCap
 	}
 	gasCap = hi
-	cfg, err := k.EVMConfig(ctx, evmkeeper.GetProposerAddress(ctx, req.ProposerAddress), chainID)
+	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to load evm config")
 	}
@@ -201,7 +373,7 @@ func (k *Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*typ
 // TraceTx configures a new tracer according to the provided configuration, and
 // executes the given message in the provided environment. The return value will
 // be tracer dependent.
-func (k *Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*types.QueryTraceTxResponse, error) {
+func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*types.QueryTraceTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -221,11 +393,8 @@ func (k *Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*ty
 	ctx = ctx.WithBlockHeight(contextHeight)
 	ctx = ctx.WithBlockTime(req.BlockTime)
 	ctx = ctx.WithHeaderHash(common.Hex2Bytes(req.BlockHash))
-	chainID, err := getChainID(ctx, req.ChainId)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	cfg, err := k.EVMConfig(ctx, evmkeeper.GetProposerAddress(ctx, req.ProposerAddress), chainID)
+	chainID := getChainID(req.ChainId)
+	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to load evm config: %s", err.Error())
 	}
@@ -278,7 +447,7 @@ func (k *Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*ty
 // TraceBlock configures a new tracer according to the provided configuration, and
 // executes the given message in the provided environment for all the transactions in the queried block.
 // The return value will be tracer dependent.
-func (k *Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest) (*types.QueryTraceBlockResponse, error) {
+func (k Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest) (*types.QueryTraceBlockResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -298,12 +467,9 @@ func (k *Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest
 	ctx = ctx.WithBlockHeight(contextHeight)
 	ctx = ctx.WithBlockTime(req.BlockTime)
 	ctx = ctx.WithHeaderHash(common.Hex2Bytes(req.BlockHash))
-	chainID, err := getChainID(ctx, req.ChainId)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	chainID := getChainID(req.ChainId)
 
-	cfg, err := k.EVMConfig(ctx, evmkeeper.GetProposerAddress(ctx, req.ProposerAddress), chainID)
+	cfg, err := k.EVMConfig(ctx, GetProposerAddress(ctx, req.ProposerAddress), chainID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to load evm config")
 	}
@@ -424,10 +590,27 @@ func (k *Keeper) traceTx(
 	return &result, txConfig.LogIndex + uint(len(res.Logs)), nil
 }
 
-// getChainID parse chainID from current context if not provided
-func getChainID(ctx sdk.Context, chainID int64) (*big.Int, error) {
-	if chainID == 0 {
-		return etherminttypes.ParseChainID(ctx.ChainID())
+// BaseFee implements the Query/BaseFee gRPC method
+func (k Keeper) BaseFee(c context.Context, _ *types.QueryBaseFeeRequest) (*types.QueryBaseFeeResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+
+	params := k.GetParams(ctx)
+	ethCfg := params.ChainConfig.EthereumConfig(k.eip155ChainID)
+	baseFee := k.GetBaseFee(ctx, ethCfg)
+
+	res := &types.QueryBaseFeeResponse{}
+	if baseFee != nil {
+		aux := sdkmath.NewIntFromBigInt(baseFee)
+		res.BaseFee = &aux
 	}
-	return big.NewInt(chainID), nil
+
+	return res, nil
+}
+
+// getChainID parse chainID from current context if not provided
+func getChainID(chainID int64) *big.Int {
+	if chainID == 0 {
+		return fxtypes.EIP155ChainID()
+	}
+	return big.NewInt(chainID)
 }

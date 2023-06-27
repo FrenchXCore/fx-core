@@ -15,7 +15,6 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/stretchr/testify/suite"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -23,6 +22,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/functionx/fx-core/v5/app"
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
 	"github.com/functionx/fx-core/v5/testutil/helpers"
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	arbitrumtypes "github.com/functionx/fx-core/v5/x/arbitrum/types"

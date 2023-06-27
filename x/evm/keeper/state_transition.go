@@ -11,37 +11,105 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	ethparams "github.com/ethereum/go-ethereum/params"
-	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
-	"github.com/evmos/ethermint/x/evm/statedb"
-	"github.com/evmos/ethermint/x/evm/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 
 	fxtypes "github.com/functionx/fx-core/v5/types"
+	"github.com/functionx/fx-core/v5/x/evm/statedb"
+	"github.com/functionx/fx-core/v5/x/evm/types"
 )
 
-// EVMConfig creates the EVMConfig based on current state
-func (k *Keeper) EVMConfig(ctx sdk.Context, proposerAddress sdk.ConsAddress, chainID *big.Int) (*statedb.EVMConfig, error) {
-	params := k.GetParams(ctx)
-	ethCfg := params.ChainConfig.EthereumConfig(chainID)
+// NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters
+// (ChainConfig and module Params). It additionally sets the validator operator address as the
+// coinbase address to make it available for the COINBASE opcode, even though there is no
+// beneficiary of the coinbase transaction (since we're not mining).
+//
+// NOTE: the RANDOM opcode is currently not supported since it requires
+// RANDAO implementation. See https://github.com/evmos/ethermint/pull/1520#pullrequestreview-1200504697
+// for more information.
 
-	// get the coinbase address from the block proposer, if genesis block, set zero address
-	var coinbase common.Address
-	if ctx.BlockHeight() > 0 {
-		var err error
-		coinbase, err = k.GetCoinbaseAddress(ctx, proposerAddress)
-		if err != nil {
-			return nil, errorsmod.Wrap(err, "failed to obtain coinbase address")
-		}
-	} else {
-		coinbase = common.HexToAddress(fxtypes.EmptyEvmAddress)
+func (k *Keeper) NewEVM(
+	ctx sdk.Context,
+	msg core.Message,
+	cfg *statedb.EVMConfig,
+	tracer vm.EVMLogger,
+	stateDB vm.StateDB,
+) *vm.EVM {
+	blockCtx := vm.BlockContext{
+		CanTransfer: core.CanTransfer,
+		Transfer:    core.Transfer,
+		GetHash:     k.GetHashFn(ctx),
+		Coinbase:    cfg.CoinBase,
+		GasLimit:    fxtypes.BlockGasLimit(ctx),
+		BlockNumber: big.NewInt(ctx.BlockHeight()),
+		Time:        big.NewInt(ctx.BlockHeader().Time.Unix()),
+		Difficulty:  big.NewInt(0), // unused. Only required in PoW context
+		BaseFee:     cfg.BaseFee,
+		Random:      nil, // not supported
 	}
 
-	baseFee := k.GetBaseFee(ctx, ethCfg)
-	return &statedb.EVMConfig{
-		Params:      params,
-		ChainConfig: ethCfg,
-		CoinBase:    coinbase,
-		BaseFee:     baseFee,
-	}, nil
+	txCtx := core.NewEVMTxContext(msg)
+	if tracer == nil {
+		tracer = k.Tracer(ctx, msg, cfg.ChainConfig)
+	}
+	vmConfig := k.VMConfig(ctx, msg, cfg, tracer)
+
+	return vm.NewEVM(blockCtx, txCtx, stateDB, cfg.ChainConfig, vmConfig)
+}
+
+// GetHashFn implements vm.GetHashFunc for Evm. It handles 3 cases:
+//  1. The requested height matches the current height from context (and thus same epoch number)
+//  2. The requested height is from an previous height from the same chain epoch
+//  3. The requested height is from a height greater than the latest one
+func (k Keeper) GetHashFn(ctx sdk.Context) vm.GetHashFunc {
+	return func(height uint64) common.Hash {
+		h, err := fxtypes.SafeInt64(height)
+		if err != nil {
+			k.Logger(ctx).Error("failed to cast height to int64", "error", err)
+			return common.Hash{}
+		}
+
+		switch {
+		case ctx.BlockHeight() == h:
+			// Case 1: The requested height matches the one from the context so we can retrieve the header
+			// hash directly from the context.
+			// Note: The headerHash is only set at begin block, it will be nil in case of a query context
+			headerHash := ctx.HeaderHash()
+			if len(headerHash) != 0 {
+				return common.BytesToHash(headerHash)
+			}
+
+			// only recompute the hash if not set (eg: checkTxState)
+			contextBlockHeader := ctx.BlockHeader()
+			header, err := tmtypes.HeaderFromProto(&contextBlockHeader)
+			if err != nil {
+				k.Logger(ctx).Error("failed to cast tendermint header from proto", "error", err)
+				return common.Hash{}
+			}
+
+			headerHash = header.Hash()
+			return common.BytesToHash(headerHash)
+
+		case ctx.BlockHeight() > h:
+			// Case 2: if the chain is not the current height we need to retrieve the hash from the store for the
+			// current chain epoch. This only applies if the current height is greater than the requested height.
+			histInfo, found := k.stakingKeeper.GetHistoricalInfo(ctx, h)
+			if !found {
+				k.Logger(ctx).Debug("historical info not found", "height", h)
+				return common.Hash{}
+			}
+
+			header, err := tmtypes.HeaderFromProto(&histInfo.Header)
+			if err != nil {
+				k.Logger(ctx).Error("failed to cast tendermint header from proto", "error", err)
+				return common.Hash{}
+			}
+
+			return common.BytesToHash(header.Hash())
+		default:
+			// Case 3: heights greater than the current one returns an empty hash.
+			return common.Hash{}
+		}
+	}
 }
 
 // ApplyTransaction runs and attempts to perform a state transition with the given transaction (i.e Message), that will
@@ -67,7 +135,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, msgEth *types.MsgEthereumTx) 
 		bloomReceipt ethtypes.Bloom
 	)
 
-	cfg, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.ChainID())
+	cfg, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
@@ -81,19 +149,8 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, msgEth *types.MsgEthereumTx) 
 		return nil, errorsmod.Wrap(err, "failed to return ethereum transaction as core message")
 	}
 
-	// snapshot to contain the tx processing and post processing in same scope
-	var commit func()
-	tmpCtx := ctx
-	if k.hasHooks {
-		// Create a cache context to revert state when tx hooks fails,
-		// the cache context is only committed when both tx and hooks executed successfully.
-		// Didn't use `Snapshot` because the context stack has exponential complexity on certain operations,
-		// thus restricted to be used only inside `ApplyMessage`.
-		tmpCtx, commit = ctx.CacheContext()
-	}
-
 	// pass true to commit the StateDB
-	res, err := k.ApplyMessageWithConfig(tmpCtx, msg, nil, true, cfg, txConfig)
+	res, err := k.ApplyMessageWithConfig(ctx, msg, nil, true, cfg, txConfig)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
 	}
@@ -137,20 +194,8 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, msgEth *types.MsgEthereumTx) 
 
 	if !res.Failed() {
 		receipt.Status = ethtypes.ReceiptStatusSuccessful
-		// Only call hooks if tx executed successfully.
-		if err = k.PostTxProcessing(tmpCtx, msg, receipt); err != nil {
-			// If hooks return error, revert the whole tx.
-			res.VmError = types.ErrPostTxProcessing.Error()
-			k.Logger(ctx).Error("tx post processing failed", "error", err)
-
-			// If the tx failed in post processing hooks, we should clear the logs
-			res.Logs = nil
-		} else if commit != nil {
-			// PostTxProcessing is successful, commit the tmpCtx
-			commit()
-			// Since the post-processing can alter the log, we need to update the result
-			res.Logs = types.NewLogsFromEth(receipt.Logs)
-		}
+		res.Logs = types.NewLogsFromEth(receipt.Logs)
+		ctx.EventManager().EmitEvents(ctx.EventManager().Events())
 	}
 
 	// refund gas in order to match the Ethereum gas consumption instead of the default SDK one.
@@ -174,6 +219,17 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, msgEth *types.MsgEthereumTx) 
 	// reset the gas meter for current cosmos transaction
 	k.ResetGasMeterAndConsumeGas(ctx, totalGasUsed)
 	return res, nil
+}
+
+// ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
+func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*types.MsgEthereumTxResponse, error) {
+	cfg, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "failed to load evm config")
+	}
+
+	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
+	return k.ApplyMessageWithConfig(ctx, msg, tracer, commit, cfg, txConfig)
 }
 
 // ApplyMessageWithConfig computes the new state by applying the given message against the existing state.
@@ -300,7 +356,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 	}
 	// refund gas
 	temporaryGasUsed := msg.Gas() - leftoverGas
-	leftoverGas += evmkeeper.GasToRefund(stateDB.GetRefund(), temporaryGasUsed, refundQuotient)
+	leftoverGas += GasToRefund(stateDB.GetRefund(), temporaryGasUsed, refundQuotient)
 
 	// EVM execution error needs to be available for the JSON-RPC client
 	var vmError string
@@ -337,14 +393,4 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 		Logs:    types.NewLogsFromEth(stateDB.Logs()),
 		Hash:    txConfig.TxHash.Hex(),
 	}, nil
-}
-
-// ApplyMessage calls ApplyMessageWithConfig with default EVMConfig
-func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*types.MsgEthereumTxResponse, error) {
-	cfg, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.ChainID())
-	if err != nil {
-		return nil, errorsmod.Wrap(err, "failed to load evm config")
-	}
-	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
-	return k.ApplyMessageWithConfig(ctx, msg, tracer, commit, cfg, txConfig)
 }

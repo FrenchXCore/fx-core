@@ -12,9 +12,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"golang.org/x/crypto/sha3"
 	"gopkg.in/yaml.v2"
+
+	"github.com/functionx/fx-core/v5/crypto/ethsecp256k1"
 )
 
 // available output formats.

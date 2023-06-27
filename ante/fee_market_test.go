@@ -7,10 +7,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/functionx/fx-core/v5/ante"
 	"github.com/functionx/fx-core/v5/testutil/helpers"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 func (suite *AnteTestSuite) TestGasWantedDecorator() {

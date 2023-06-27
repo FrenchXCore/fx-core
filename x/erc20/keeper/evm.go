@@ -7,10 +7,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	"github.com/functionx/fx-core/v5/x/erc20/types"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 // QueryERC20 returns the data of a deployed ERC20 contract

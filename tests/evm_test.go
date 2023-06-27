@@ -14,14 +14,14 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 
 	"github.com/functionx/fx-core/v5/client"
 	"github.com/functionx/fx-core/v5/contract"
 	"github.com/functionx/fx-core/v5/testutil/helpers"
 	"github.com/functionx/fx-core/v5/types"
-	fxevmtypes "github.com/functionx/fx-core/v5/x/evm/types"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
+	typesfx "github.com/functionx/fx-core/v5/x/evm/types/fx"
 )
 
 func (suite *IntegrationTest) WFXTest() {
@@ -308,7 +308,7 @@ func (suite *IntegrationTest) CallContractTest() {
 	amount := new(big.Int).Exp(big.NewInt(10), big.NewInt(20), nil)
 	args, err := types.GetFIP20().ABI.Pack("mint", suite.evm.HexAddress(), amount)
 	suite.Require().NoError(err)
-	response, proposalId := suite.BroadcastProposalTx2([]sdk.Msg{&fxevmtypes.MsgCallContract{
+	response, proposalId := suite.BroadcastProposalTx2([]sdk.Msg{&typesfx.MsgCallContract{
 		Authority:       authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		ContractAddress: proxy.String(),
 		Data:            common.Bytes2Hex(args),

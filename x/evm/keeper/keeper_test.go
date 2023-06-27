@@ -5,27 +5,31 @@ import (
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/stretchr/testify/suite"
+	abci "github.com/tendermint/tendermint/abci/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/functionx/fx-core/v5/app"
 	"github.com/functionx/fx-core/v5/testutil/helpers"
 	fxtypes "github.com/functionx/fx-core/v5/types"
+	"github.com/functionx/fx-core/v5/x/evm/statedb"
+	"github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 type KeeperTestSuite struct {
 	suite.Suite
 
-	app    *app.App
-	ctx    sdk.Context
-	signer *helpers.Signer
+	app         *app.App
+	ctx         sdk.Context
+	signer      *helpers.Signer
+	queryClient types.QueryClient
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -45,6 +49,10 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	suite.signer = helpers.NewSigner(helpers.NewEthPrivKey())
 	helpers.AddTestAddr(suite.app, suite.ctx, suite.signer.AccAddress(), sdk.NewCoins(sdk.NewCoin(fxtypes.DefaultDenom, sdkmath.NewInt(100).MulRaw(1e18))))
+
+	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
+	types.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
+	suite.queryClient = types.NewQueryClient(queryHelper)
 }
 
 func (suite *KeeperTestSuite) DeployERC20Contract() common.Address {
@@ -125,9 +133,9 @@ func (suite *KeeperTestSuite) BalanceOf(contract, address common.Address) *big.I
 }
 
 func (suite *KeeperTestSuite) MintFeeCollector(coins sdk.Coins) {
-	err := suite.app.BankKeeper.MintCoins(suite.ctx, evmtypes.ModuleName, coins)
+	err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
 	suite.Require().NoError(err)
-	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, evmtypes.ModuleName, authtypes.FeeCollectorName, coins)
+	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, types.ModuleName, authtypes.FeeCollectorName, coins)
 	suite.Require().NoError(err)
 }
 
@@ -136,10 +144,10 @@ func (suite *KeeperTestSuite) BurnEvmRefundFee(addr sdk.AccAddress, coins sdk.Co
 	suite.Require().NoError(err)
 
 	bal := suite.app.BankKeeper.GetBalance(suite.ctx, suite.app.AccountKeeper.GetModuleAddress(authtypes.FeeCollectorName), fxtypes.DefaultDenom)
-	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, authtypes.FeeCollectorName, evmtypes.ModuleName, sdk.NewCoins(bal))
+	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, authtypes.FeeCollectorName, types.ModuleName, sdk.NewCoins(bal))
 	suite.Require().NoError(err)
 
-	err = suite.app.BankKeeper.BurnCoins(suite.ctx, evmtypes.ModuleName, sdk.NewCoins(bal))
+	err = suite.app.BankKeeper.BurnCoins(suite.ctx, types.ModuleName, sdk.NewCoins(bal))
 	suite.Require().NoError(err)
 }
 
@@ -261,7 +269,7 @@ func (suite *KeeperTestSuite) Deposit(contract common.Address, amount *big.Int) 
 		true,
 	)
 
-	rsp, err := suite.app.EvmKeeper.ApplyMessage(suite.ctx, msg, evmtypes.NewNoOpTracer(), true)
+	rsp, err := suite.app.EvmKeeper.ApplyMessage(suite.ctx, msg, types.NewNoOpTracer(), true)
 	suite.Require().NoError(err)
 	suite.Require().NoError(err)
 	suite.Require().False(rsp.Failed(), rsp)
@@ -316,5 +324,26 @@ func (suite *KeeperTestSuite) CheckFIP20Method(contract common.Address, name, sy
 	suite.Burn(contract, suite.signer.Address(), big.NewInt(100))
 
 	// module
-	suite.Equal(common.BytesToAddress(suite.app.AccountKeeper.GetModuleAddress(evmtypes.ModuleName)), suite.Module(contract))
+	suite.Equal(common.BytesToAddress(suite.app.AccountKeeper.GetModuleAddress(types.ModuleName)), suite.Module(contract))
+}
+
+// Commit and begin new block
+func (suite *KeeperTestSuite) Commit() {
+	_ = suite.app.Commit()
+	header := suite.ctx.BlockHeader()
+	header.Height += 1
+	suite.app.BeginBlock(abci.RequestBeginBlock{
+		Header: header,
+	})
+
+	// update ctx
+	suite.ctx = suite.app.BaseApp.NewContext(false, header)
+
+	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
+	types.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
+	suite.queryClient = types.NewQueryClient(queryHelper)
+}
+
+func (suite *KeeperTestSuite) StateDB() *statedb.StateDB {
+	return statedb.New(suite.ctx, suite.app.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(suite.ctx.HeaderHash().Bytes())))
 }

@@ -14,11 +14,10 @@ import (
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	fxtypes "github.com/functionx/fx-core/v5/types"
 	erc20types "github.com/functionx/fx-core/v5/x/erc20/types"
-	"github.com/functionx/fx-core/v5/x/evm/types"
+	evmtypes "github.com/functionx/fx-core/v5/x/evm/types"
 )
 
 // FIP20CrossChain only for fip20 contract transferCrossChain called
@@ -36,7 +35,7 @@ func (c *Contract) FIP20CrossChain(ctx sdk.Context, evm *vm.EVM, contract *vm.Co
 	}
 
 	var args FIP20CrossChainArgs
-	if err := types.ParseMethodArgs(FIP20CrossChainMethod, &args, contract.Input[4:]); err != nil {
+	if err := evmtypes.ParseMethodArgs(FIP20CrossChainMethod, &args, contract.Input[4:]); err != nil {
 		return nil, err
 	}
 
@@ -98,7 +97,7 @@ func (c *Contract) CrossChain(ctx sdk.Context, evm *vm.EVM, contract *vm.Contrac
 
 	// args
 	var args CrossChainArgs
-	err := types.ParseMethodArgs(CrossChainMethod, &args, contract.Input[4:])
+	err := evmtypes.ParseMethodArgs(CrossChainMethod, &args, contract.Input[4:])
 	if err != nil {
 		return nil, err
 	}
