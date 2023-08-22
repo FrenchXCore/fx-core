@@ -204,7 +204,8 @@ replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	// use informal system fork of tendermint
-	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.28
+	//github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.28
+	github.com/tendermint/tendermint => github.com/FrenchXCore/cometbft v0.34.29-0.20230822180722-aad2c229f933
 )
 
 // use for precompile
